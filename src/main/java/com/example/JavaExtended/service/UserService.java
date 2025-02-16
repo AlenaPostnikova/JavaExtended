@@ -17,6 +17,6 @@ public interface UserService {
 
     List<UserInfoResp> getAllUsers();
 
-    UserInfoResp getUser(String email, String lastName);
+//    UserInfoResp getUser(String email, String lastName);
 
 }

@@ -2,7 +2,6 @@ package com.example.JavaExtended.controllers;
 
 import com.example.JavaExtended.model.dto.request.CarInfoReq;
 import com.example.JavaExtended.model.dto.response.CarInfoResp;
-import com.example.JavaExtended.model.enums.Color;
 import com.example.JavaExtended.service.impl.CarServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -39,11 +38,6 @@ public class CarController {
     @GetMapping("/all")
     public List<CarInfoResp> getAllCars(){
         return carService.getAllCars();
-    }
-
-    @GetMapping
-    public CarInfoResp getCarWithParams(@RequestParam(required = false) String brand, @RequestParam Color color){
-        return carService.getCar(brand, color);
     }
 
 }

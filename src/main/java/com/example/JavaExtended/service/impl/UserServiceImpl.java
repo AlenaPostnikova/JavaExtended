@@ -1,8 +1,10 @@
 package com.example.JavaExtended.service.impl;
 
+import com.example.JavaExtended.model.db.entity.User;
+import com.example.JavaExtended.model.db.repository.UserRepository;
 import com.example.JavaExtended.model.dto.request.UserInfoReq;
 import com.example.JavaExtended.model.dto.response.UserInfoResp;
-import com.example.JavaExtended.model.enums.Gender;
+import com.example.JavaExtended.model.enums.UserStatus;
 import com.example.JavaExtended.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -10,77 +12,75 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j //для логирования
 @Service
 @RequiredArgsConstructor //созд. конструктора для инициализации бина
 public class UserServiceImpl implements UserService {
     private final ObjectMapper mapper;
+    private final UserRepository userRepository;
 
     @Override
     public UserInfoResp addUser(UserInfoReq req) {
-        UserInfoResp userInfoResp = mapper.convertValue(req, UserInfoResp.class);
-        userInfoResp.setId(1L);
-        return userInfoResp;
+        User user = mapper.convertValue(req, User.class); //преобразуем запрос в Пользователя-сущность
+        user.setStatus(UserStatus.CREATED); //присваиваем статус
+
+        User save = userRepository.save(user); //сохранили в базу данных
+        return mapper.convertValue(save, UserInfoResp.class);
     }
 
     @Override
     public UserInfoResp getUser(Long id) {
-        return UserInfoResp.builder()
-                .id(1L)
-                .email("cow@mail.ru")
-                .age(4)
-                .firstName("Fedor")
-                .lastName("Plushikov")
-                .middleName("Korovich")
-                .gender(Gender.MALE)
-                .password("Cow12")
-                .build();
+      User user = getUserFromDB(id);
+      return mapper.convertValue(user, UserInfoResp.class);
     }
+
+    private User getUserFromDB(Long id) {
+        Optional<User> optionalUser = userRepository.findById(id);
+        return optionalUser.orElse(new User());
+    }
+
 
     @Override
     public UserInfoResp updateUser(Long id, UserInfoReq req) {
-        if (id != 1L){
-            log.error("User with id {} not found", id);
-            return null;
+        User userFromDB = getUserFromDB(id);
+        if (userFromDB.getId() == null) {
+            return mapper.convertValue(userFromDB, UserInfoResp.class);
         }
-        return UserInfoResp.builder()
-                .id(1L)
-                .email("cat@mail.ru")
-                .age(3)
-                .firstName("Guri")
-                .lastName("Plushikov")
-                .middleName("Vladimirovich")
-                .gender(Gender.MALE)
-                .password("Cow123")
-                .build();
+        User userReq = mapper.convertValue(req, User.class);
+
+        userFromDB.setEmail(userReq.getEmail() == null ? userFromDB.getEmail() : userReq.getEmail());
+        userFromDB.setPassword(userReq.getPassword() == null ? userFromDB.getPassword() : userReq.getPassword());
+        userFromDB.setFirstName(userReq.getFirstName() == null ? userFromDB.getFirstName() : userReq.getFirstName());
+        userFromDB.setLastName(userReq.getLastName() == null ? userFromDB.getLastName() : userReq.getLastName());
+        userFromDB.setMiddleName(userReq.getMiddleName() == null ? userFromDB.getMiddleName() : userReq.getMiddleName());
+        userFromDB.setAge(userReq.getAge() == null ? userFromDB.getAge() : userReq.getAge());
+        userFromDB.setGender(userReq.getGender() == null ? userFromDB.getGender() : userReq.getGender());
+        userFromDB.setStatus(UserStatus.UPDATED);
+        userFromDB = userRepository.save(userFromDB);
+        return mapper.convertValue(userFromDB, UserInfoResp.class);
     }
+
 
     @Override
     public void deleteUser(Long id) {
-        if (id != 1L){
+        User userFromDB = getUserFromDB(id);
+        if (userFromDB.getId() == null){
             log.error("User with id {} not found", id);
             return;
         }
-        log.info("User with id {} deleted successfully", id);
+        userFromDB.setStatus(UserStatus.DELETED);
+        userFromDB = userRepository.save(userFromDB);
     }
 
     @Override
     public List<UserInfoResp> getAllUsers() {
-        return List.of(UserInfoResp.builder()
-                .id(1L)
-                .email("cat@mail.ru")
-                .age(3)
-                .firstName("Guri")
-                .lastName("Plushikov")
-                .middleName("Vladimirovich")
-                .gender(Gender.MALE)
-                .password("Cow123")
-                .build());
-    }
+        return userRepository.findAll().stream()
+                .map(user -> mapper.convertValue(user, UserInfoResp.class))
+                .collect(Collectors.toList());
+        }
 
-    @Override
-    public UserInfoResp getUser(String email, String lastName) {
-        return getUser(1L);
+
     }
-}
