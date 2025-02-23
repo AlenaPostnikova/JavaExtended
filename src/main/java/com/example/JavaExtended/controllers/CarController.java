@@ -4,6 +4,8 @@ import com.example.JavaExtended.model.dto.request.CarInfoReq;
 import com.example.JavaExtended.model.dto.response.CarInfoResp;
 import com.example.JavaExtended.service.impl.CarServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,7 +15,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CarController {
     private final CarServiceImpl carService;
-
 
     @GetMapping("/{id}")
     public CarInfoResp getCar(@PathVariable Long id){
@@ -36,8 +37,22 @@ public class CarController {
     }
 
     @GetMapping("/all")
-    public List<CarInfoResp> getAllCars(){
-        return carService.getAllCars();
+    public Page<CarInfoResp> getAllCars(@RequestParam(defaultValue = "1") Integer page,
+                                          @RequestParam(defaultValue = "10") Integer perPage,
+                                          @RequestParam(defaultValue = "brand") String sort,
+                                          @RequestParam(defaultValue = "ASC") Sort.Direction order,
+                                          @RequestParam(required = false) String filter){
+        return carService.getAllCars(page, perPage, sort, order, filter);
+    }
+
+    @PostMapping("/linkCarAndDriver/{carId}/{userId}")
+    public CarInfoResp linkCarAndDriver(@PathVariable Long carId, @PathVariable Long userId) {
+        return carService.linkCarAndDriver(carId, userId);
+    }
+
+    @GetMapping("/{id}/myCars")
+    public List<CarInfoResp> getMyCars(@PathVariable Long id){
+        return carService.getUserCars(id);
     }
 
 }

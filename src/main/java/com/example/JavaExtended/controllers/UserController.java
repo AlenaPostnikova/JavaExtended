@@ -4,6 +4,8 @@ import com.example.JavaExtended.model.dto.request.UserInfoReq;
 import com.example.JavaExtended.model.dto.response.UserInfoResp;
 import com.example.JavaExtended.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,8 +37,14 @@ public class UserController {
     }
 
     @GetMapping("/all")
-    public List<UserInfoResp> getAllUser(){
-        return userService.getAllUsers();
+//    public List<UserInfoResp> getAllUser(){
+//        return userService.getAllUsers();
+    public Page<UserInfoResp> getAllUsers(@RequestParam(defaultValue = "1") Integer page,
+                                          @RequestParam(defaultValue = "10") Integer perPage,
+                                          @RequestParam(defaultValue = "lastName") String sort,
+                                          @RequestParam(defaultValue = "ASC") Sort.Direction order,
+                                          @RequestParam(required = false) String filter){
+        return userService.getAllUsers(page, perPage, sort, order, filter);
     }
 
 }

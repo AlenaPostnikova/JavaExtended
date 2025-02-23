@@ -3,6 +3,7 @@ package com.example.JavaExtended.model.db.entity;
 import com.example.JavaExtended.model.enums.CarStatus;
 import com.example.JavaExtended.model.enums.CarType;
 import com.example.JavaExtended.model.enums.Color;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -54,4 +55,8 @@ public class Car {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private CarStatus status;
+
+    @ManyToOne
+    @JsonBackReference(value = "driver_cars")
+    private User user;
 }

@@ -2,6 +2,7 @@ package com.example.JavaExtended.model.db.entity;
 
 import com.example.JavaExtended.model.enums.Gender;
 import com.example.JavaExtended.model.enums.UserStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -52,4 +54,8 @@ public class User {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private UserStatus status;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "driver_cars")
+    private List<Car> cars;
 }
