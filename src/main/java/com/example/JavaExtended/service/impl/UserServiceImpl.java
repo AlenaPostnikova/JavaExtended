@@ -1,5 +1,6 @@
 package com.example.JavaExtended.service.impl;
 
+import com.example.JavaExtended.exeption.CommonBackendException;
 import com.example.JavaExtended.model.db.entity.User;
 import com.example.JavaExtended.model.db.repository.UserRepository;
 import com.example.JavaExtended.model.dto.request.UserInfoReq;
@@ -10,10 +11,12 @@ import com.example.JavaExtended.utils.PaginationUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -30,6 +33,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoResp addUser(UserInfoReq req) {
+
+        if (!EmailValidator.getInstance().isValid(req.getEmail())) { //проверка на валидность маила
+            throw new CommonBackendException("Email invalid", HttpStatus.BAD_REQUEST);
+        }
+
+        userRepository.findByEmail(req.getEmail()).ifPresent(u -> { //проверка нет ли пользователя с таким маилом
+            throw new CommonBackendException("User already exists", HttpStatus.CONFLICT);
+        });
+
         User user = mapper.convertValue(req, User.class); //преобразуем запрос в Пользователя-сущность
         user.setStatus(UserStatus.CREATED); //присваиваем статус
 
@@ -46,16 +58,17 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserFromDB(Long id) {
         Optional<User> optionalUser = userRepository.findById(id);
-        return optionalUser.orElse(new User());
+
+        final String errMsg = String.format("User with id: %s not found", id);
+
+        return optionalUser.orElseThrow(() -> new CommonBackendException(errMsg, HttpStatus.NOT_FOUND));
     }
 
 
     @Override
     public UserInfoResp updateUser(Long id, UserInfoReq req) {
         User userFromDB = getUserFromDB(id);
-        if (userFromDB.getId() == null) {
-            return mapper.convertValue(userFromDB, UserInfoResp.class);
-        }
+
         User userReq = mapper.convertValue(req, User.class);
 
         userFromDB.setEmail(userReq.getEmail() == null ? userFromDB.getEmail() : userReq.getEmail());
@@ -65,6 +78,7 @@ public class UserServiceImpl implements UserService {
         userFromDB.setMiddleName(userReq.getMiddleName() == null ? userFromDB.getMiddleName() : userReq.getMiddleName());
         userFromDB.setAge(userReq.getAge() == null ? userFromDB.getAge() : userReq.getAge());
         userFromDB.setGender(userReq.getGender() == null ? userFromDB.getGender() : userReq.getGender());
+
         userFromDB.setStatus(UserStatus.UPDATED);
         userFromDB = userRepository.save(userFromDB);
         return mapper.convertValue(userFromDB, UserInfoResp.class);
@@ -74,10 +88,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) {
         User userFromDB = getUserFromDB(id);
-        if (userFromDB.getId() == null){
-            log.error("User with id {} not found", id);
-            return;
-        }
+
         userFromDB.setStatus(UserStatus.DELETED);
         userFromDB = userRepository.save(userFromDB);
     }
@@ -110,6 +121,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateCarList(User updatedUser) {
         return userRepository.save(updatedUser);
+    }
+
+    @Override
+    public void invalidateSessions() {
+        //logic
+
+        String email = UserInfoReq.Fields.email;
+        String age = UserInfoReq.Fields.age;
     }
 
 }

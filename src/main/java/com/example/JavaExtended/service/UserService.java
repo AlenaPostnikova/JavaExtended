@@ -28,4 +28,6 @@ public interface UserService {
 
 //    UserInfoResp getUser(String email, String lastName);
 
+    void invalidateSessions();
+
 }

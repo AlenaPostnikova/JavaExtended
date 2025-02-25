@@ -1,5 +1,6 @@
 package com.example.JavaExtended.service.impl;
 
+import com.example.JavaExtended.exeption.CommonBackendException;
 import com.example.JavaExtended.model.db.entity.Car;
 import com.example.JavaExtended.model.db.entity.User;
 import com.example.JavaExtended.model.db.repository.CarRepository;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -32,6 +34,7 @@ public class CarServiceImpl {
     private final UserService userService;
 
     public CarInfoResp addCar(CarInfoReq req) {
+
         Car car = mapper.convertValue(req, Car.class);
         car.setStatus(CarStatus.CREATED);
 
@@ -40,8 +43,12 @@ public class CarServiceImpl {
     }
 
     private Car getCarFromDB(Long id) {
+
         Optional<Car> optionalCar = carRepository.findById(id);
-        return optionalCar.orElse(new Car());
+
+        final String errMessage = String.format("Car with id: %s not found", id);
+
+        return optionalCar.orElseThrow(() -> new CommonBackendException(errMessage, HttpStatus.NOT_FOUND));
     }
 
     public CarInfoResp getCar(Long id) {
@@ -53,9 +60,6 @@ public class CarServiceImpl {
     public CarInfoResp updateCar(Long id, CarInfoReq req) {
         Car carFromDB = getCarFromDB(id);
 
-        if (carFromDB.getId() == null){
-            return mapper.convertValue(carFromDB, CarInfoResp.class);
-        }
         Car carReq = mapper.convertValue(req, Car.class);
 
         carFromDB.setBrand(carReq.getBrand() == null ? carFromDB.getBrand() : carReq.getBrand());
@@ -66,7 +70,7 @@ public class CarServiceImpl {
         carFromDB.setIsNew(carReq.getIsNew() == null ? carFromDB.getIsNew() : carReq.getIsNew());
         carFromDB.setType(carReq.getType() == null ? carFromDB.getType() : carReq.getType());
 
-        carFromDB.setStatus(CarStatus.CREATED);
+        carFromDB.setStatus(CarStatus.UPDATED);
         carFromDB = carRepository.save(carFromDB);
 
         return mapper.convertValue(carFromDB, CarInfoResp.class);
@@ -74,18 +78,13 @@ public class CarServiceImpl {
 
     public void deleteCar(Long id) {
         Car carFromDB = getCarFromDB(id);
-        if (carFromDB.getId() == null){
-            log.error("Car with id {} not found", id);
-            return;
-        }
+
         carFromDB.setStatus(CarStatus.DELETED);
         carFromDB = carRepository.save(carFromDB);
     }
 
     public Page<CarInfoResp> getAllCars(Integer page, Integer perPage, String sort, Sort.Direction order, String filter) {
-//        return carRepository.findAll().stream()
-//                .map(car -> mapper.convertValue(car, CarInfoResp.class))
-//                .collect(Collectors.toList());
+
         Pageable pageRequest = PaginationUtils.getPageRequest(page, perPage, sort, order);
 
         Page<Car> cars;
@@ -132,6 +131,9 @@ public class CarServiceImpl {
     }
 
     public List<CarInfoResp> getUserCars(Long userId){
+
+        User user = userService.getUserFromDB(userId); //чтобы выбросить исключение, если пользователь не найден
+
         return carRepository.getUserCarsBrandName(userId).stream()
                 .map(car-> mapper.convertValue(car, CarInfoResp.class))
                 .collect(Collectors.toList());
